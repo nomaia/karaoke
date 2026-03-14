@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 
+export const runtime = "nodejs";
+export const preferredRegion = "gru1";
+
 export async function POST(request: Request) {
     const { id } = await request.json();
 

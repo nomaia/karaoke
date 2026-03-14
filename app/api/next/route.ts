@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 
+export const runtime = "nodejs";
+export const preferredRegion = "gru1";
+
 export const dynamic = "force-dynamic";
 
 export async function POST() {
