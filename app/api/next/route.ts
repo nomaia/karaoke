@@ -1,24 +1,43 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { kv } from "@vercel/kv";
 
-const filePath = path.join(process.cwd(), "data", "queue.json");
+export const dynamic = "force-dynamic";
 
 export async function POST() {
+    try {
+        const queue = await kv.lrange("queue", 0, -1);
 
-    const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+        const parsedQueue = queue.map((item: any) =>
+            typeof item === "string" ? JSON.parse(item) : item
+        );
 
-    if (data.queue.length === 0) {
+        if (parsedQueue.length === 0) {
+            return NextResponse.json(
+                { error: "Fila vazia" },
+                { status: 400 }
+            );
+        }
+
+        parsedQueue.shift();
+
+        await kv.del("queue");
+
+        if (parsedQueue.length > 0) {
+            for (const item of parsedQueue) {
+                await kv.rpush("queue", JSON.stringify(item));
+            }
+        }
+
         return NextResponse.json({
-            error: "Fila vazia"
+            success: true,
+            queue: parsedQueue,
         });
+    } catch (error) {
+        console.error("Erro em /api/next:", error);
+
+        return NextResponse.json(
+            { error: "Erro ao avançar fila." },
+            { status: 500 }
+        );
     }
-
-    const proxima = data.queue.shift();
-
-    data.current = proxima;
-
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-
-    return NextResponse.json(data);
 }

@@ -11,40 +11,37 @@ type Musica = {
 };
 
 export default function Player() {
-
     const [fila, setFila] = useState<Musica[]>([]);
 
     async function carregarFila() {
+        try {
+            const res = await fetch("/api/queue?nocache=" + Date.now(), {
+                cache: "no-store",
+            });
 
-        const res = await fetch("/api/queue", {
-            cache: "no-store"
-        });
-
-        const data = await res.json();
-        setFila(data.queue);
-
+            const data = await res.json();
+            setFila(data.queue ?? []);
+        } catch (erro) {
+            console.error("Erro ao carregar fila no player:", erro);
+            setFila([]);
+        }
     }
 
     async function iniciarProxima() {
-
         if (fila.length === 0) return;
 
         const musica = fila[0];
 
-        // abre youtube
         window.open(musica.link, "_blank");
 
-        // remove da fila
         await fetch("/api/next", {
-            method: "POST"
+            method: "POST",
         });
 
         carregarFila();
-
     }
 
     useEffect(() => {
-
         carregarFila();
 
         const intervalo = setInterval(() => {
@@ -52,7 +49,6 @@ export default function Player() {
         }, 3000);
 
         return () => clearInterval(intervalo);
-
     }, []);
 
     const proxima = fila[0];
@@ -60,29 +56,31 @@ export default function Player() {
 
     return (
         <main style={{ padding: 40, maxWidth: 900, margin: "0 auto" }}>
-
             <h1>🎤 Painel do Karaoke</h1>
 
             {!proxima && <p>Ninguém na fila.</p>}
 
             {proxima && (
-                <div style={{
-                    border: "2px solid #ddd",
-                    padding: 20,
-                    borderRadius: 12,
-                    marginTop: 20
-                }}>
-
+                <div
+                    style={{
+                        border: "2px solid #ddd",
+                        padding: 20,
+                        borderRadius: 12,
+                        marginTop: 20,
+                    }}
+                >
                     <h2>Próximo a cantar</h2>
 
-                    <div style={{
-                        display: "flex",
-                        gap: 20,
-                        alignItems: "center"
-                    }}>
-
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 20,
+                            alignItems: "center",
+                        }}
+                    >
                         <img
                             src={`https://img.youtube.com/vi/${proxima.youtubeId}/hqdefault.jpg`}
+                            alt={`Thumbnail de ${proxima.nome}`}
                             style={{ width: 200, borderRadius: 10 }}
                         />
 
@@ -95,26 +93,21 @@ export default function Player() {
                                     marginTop: 10,
                                     padding: 14,
                                     fontSize: 18,
-                                    cursor: "pointer"
+                                    cursor: "pointer",
                                 }}
                             >
                                 ▶ Iniciar música
                             </button>
-
                         </div>
-
                     </div>
-
                 </div>
             )}
 
             {restante.length > 0 && (
                 <div style={{ marginTop: 40 }}>
-
                     <h2>Fila</h2>
 
                     {restante.map((musica, index) => (
-
                         <div
                             key={musica.id}
                             style={{
@@ -124,24 +117,22 @@ export default function Player() {
                                 marginBottom: 12,
                                 padding: 12,
                                 border: "1px solid #eee",
-                                borderRadius: 10
+                                borderRadius: 10,
                             }}
                         >
-
                             <img
                                 src={`https://img.youtube.com/vi/${musica.youtubeId}/default.jpg`}
+                                alt={`Thumbnail de ${musica.nome}`}
                                 style={{ width: 80 }}
                             />
 
-                            <span>{index + 2}. {musica.nome}</span>
-
+                            <span>
+                                {index + 2}. {musica.nome}
+                            </span>
                         </div>
-
                     ))}
-
                 </div>
             )}
-
         </main>
     );
 }

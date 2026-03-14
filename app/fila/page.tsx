@@ -16,19 +16,16 @@ export default function Fila() {
 
     async function carregarFila() {
         try {
-            const resposta = await fetch("/api/queue?nocache=" + Date.now());
+            const resposta = await fetch("/api/queue?nocache=" + Date.now(), {
+                cache: "no-store",
+            });
 
             const data = await resposta.json();
-
-            if (data.queue) {
-                setFila(data.queue);
-            } else {
-                setFila([]);
-            }
-
-            setLoading(false);
+            setFila(data.queue ?? []);
         } catch (erro) {
             console.error("Erro ao carregar fila:", erro);
+            setFila([]);
+        } finally {
             setLoading(false);
         }
     }
@@ -36,21 +33,27 @@ export default function Fila() {
     useEffect(() => {
         carregarFila();
 
-        const intervalo = setInterval(carregarFila, 3000);
+        const intervalo = setInterval(() => {
+            carregarFila();
+        }, 3000);
 
         return () => clearInterval(intervalo);
     }, []);
 
     async function removerDaFila(id: number) {
-        await fetch("/api/remove", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ id }),
-        });
+        try {
+            await fetch("/api/remove", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ id }),
+            });
 
-        carregarFila();
+            carregarFila();
+        } catch (erro) {
+            console.error("Erro ao remover da fila:", erro);
+        }
     }
 
     return (
@@ -59,7 +62,6 @@ export default function Fila() {
             <p>Acompanhe a ordem das próximas músicas.</p>
 
             {loading && <p>Carregando fila...</p>}
-
             {!loading && fila.length === 0 && <p>Ninguém na fila ainda.</p>}
 
             <div style={{ marginTop: 30 }}>
@@ -78,6 +80,7 @@ export default function Fila() {
                     >
                         <img
                             src={`https://img.youtube.com/vi/${musica.youtubeId}/hqdefault.jpg`}
+                            alt={`Thumbnail de ${musica.nome}`}
                             style={{ width: 160, borderRadius: 10 }}
                         />
 
