@@ -12,45 +12,45 @@ type Musica = {
 
 export default function Fila() {
     const [fila, setFila] = useState<Musica[]>([]);
+    const [loading, setLoading] = useState(true);
 
     async function carregarFila() {
         try {
-            const resposta = await fetch("/api/queue", {
-                cache: "no-store",
-            });
+            const resposta = await fetch("/api/queue?nocache=" + Date.now());
 
             const data = await resposta.json();
 
-            setFila(data.queue ?? []);
+            if (data.queue) {
+                setFila(data.queue);
+            } else {
+                setFila([]);
+            }
+
+            setLoading(false);
         } catch (erro) {
             console.error("Erro ao carregar fila:", erro);
+            setLoading(false);
         }
     }
 
     useEffect(() => {
         carregarFila();
 
-        const intervalo = setInterval(() => {
-            carregarFila();
-        }, 3000);
+        const intervalo = setInterval(carregarFila, 3000);
 
         return () => clearInterval(intervalo);
     }, []);
 
     async function removerDaFila(id: number) {
-        try {
-            await fetch("/api/remove", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ id }),
-            });
+        await fetch("/api/remove", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ id }),
+        });
 
-            carregarFila();
-        } catch (erro) {
-            console.error("Erro ao remover da fila:", erro);
-        }
+        carregarFila();
     }
 
     return (
@@ -58,7 +58,9 @@ export default function Fila() {
             <h1>🎶 Fila do Karaoke</h1>
             <p>Acompanhe a ordem das próximas músicas.</p>
 
-            {fila.length === 0 && <p>Ninguém na fila ainda.</p>}
+            {loading && <p>Carregando fila...</p>}
+
+            {!loading && fila.length === 0 && <p>Ninguém na fila ainda.</p>}
 
             <div style={{ marginTop: 30 }}>
                 {fila.map((musica, index) => (
@@ -76,15 +78,11 @@ export default function Fila() {
                     >
                         <img
                             src={`https://img.youtube.com/vi/${musica.youtubeId}/hqdefault.jpg`}
-                            alt={`Thumbnail da música de ${musica.nome}`}
-                            style={{
-                                width: 160,
-                                borderRadius: 10,
-                            }}
+                            style={{ width: 160, borderRadius: 10 }}
                         />
 
                         <div style={{ flex: 1 }}>
-                            <h2 style={{ margin: 0, fontSize: 22 }}>
+                            <h2 style={{ margin: 0 }}>
                                 {index + 1}. {musica.nome}
                             </h2>
 
