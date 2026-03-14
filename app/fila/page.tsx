@@ -14,12 +14,17 @@ export default function Fila() {
     const [fila, setFila] = useState<Musica[]>([]);
 
     async function carregarFila() {
-        const resposta = await fetch("/api/queue", {
-            cache: "no-store",
-        });
+        try {
+            const resposta = await fetch("/api/queue", {
+                cache: "no-store",
+            });
 
-        const data = await resposta.json();
-        setFila(data.queue);
+            const data = await resposta.json();
+
+            setFila(data.queue ?? []);
+        } catch (erro) {
+            console.error("Erro ao carregar fila:", erro);
+        }
     }
 
     useEffect(() => {
@@ -33,17 +38,19 @@ export default function Fila() {
     }, []);
 
     async function removerDaFila(id: number) {
+        try {
+            await fetch("/api/remove", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ id }),
+            });
 
-        await fetch("/api/remove", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ id })
-        });
-
-        carregarFila();
-
+            carregarFila();
+        } catch (erro) {
+            console.error("Erro ao remover da fila:", erro);
+        }
     }
 
     return (
@@ -81,10 +88,6 @@ export default function Fila() {
                                 {index + 1}. {musica.nome}
                             </h2>
 
-                            <p style={{ marginTop: 8, color: "#555" }}>
-                                YouTube ID: {musica.youtubeId}
-                            </p>
-
                             <a
                                 href={musica.link}
                                 target="_blank"
@@ -101,6 +104,7 @@ export default function Fila() {
                             >
                                 ▶ Abrir no YouTube
                             </a>
+
                             <button
                                 onClick={() => removerDaFila(musica.id)}
                                 style={{
@@ -110,7 +114,7 @@ export default function Fila() {
                                     color: "#fff",
                                     border: "none",
                                     borderRadius: 8,
-                                    cursor: "pointer"
+                                    cursor: "pointer",
                                 }}
                             >
                                 ❌ Remover
