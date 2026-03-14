@@ -12,9 +12,9 @@ function getYoutubeId(url: string) {
 
 export async function POST(request: Request) {
     const body = await request.json();
-    const { nome, link } = body;
+    const { name, link } = body;
 
-    if (!nome || !link) {
+    if (!name || !link) {
         return NextResponse.json(
             { error: "Nome e link são obrigatórios" },
             { status: 400 }
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     const novaMusica = {
         id: Date.now(),
-        nome,
+        name,
         link,
         youtubeId,
         status: "waiting",
