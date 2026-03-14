@@ -46,8 +46,7 @@ export async function POST(request: Request) {
             status: "waiting",
         };
 
-        await kv.rpush("queue", JSON.stringify(novaMusica));
-
+        await kv.rpush("queue", novaMusica);
         return NextResponse.json({
             success: true,
             musica: novaMusica,
