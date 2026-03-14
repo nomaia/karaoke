@@ -4,13 +4,15 @@ import { kv } from "@vercel/kv";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+
     const queue = await kv.lrange("queue", 0, -1);
 
     const parsedQueue = queue.map((item: any) => {
-        if (typeof item === "string") {
+        try {
             return JSON.parse(item);
+        } catch {
+            return item;
         }
-        return item;
     });
 
     return NextResponse.json({
