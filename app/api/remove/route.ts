@@ -1,22 +1,18 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-
-const filePath = path.join(process.cwd(), "data", "queue.json");
+import { kv } from "@vercel/kv";
 
 export async function POST(request: Request) {
+    const { id } = await request.json();
 
-    const body = await request.json();
-    const { id } = body;
+    const queue: any[] = await kv.lrange("queue", 0, -1);
 
-    const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    const novaFila = queue.filter((item) => item.id !== id);
 
-    data.queue = data.queue.filter((musica: any) => musica.id !== id);
+    await kv.del("queue");
 
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    for (const item of novaFila) {
+        await kv.rpush("queue", item);
+    }
 
-    return NextResponse.json({
-        message: "Música removida da fila"
-    });
-
+    return NextResponse.json({ success: true });
 }
