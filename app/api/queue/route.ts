@@ -8,15 +8,15 @@ export async function GET() {
     const queue = await kv.lrange("queue", 0, -1);
 
     const parsedQueue = queue.map((item: any) => {
-        try {
-            return JSON.parse(item);
-        } catch {
-            return item;
-        }
+        const m = typeof item === "string" ? JSON.parse(item) : item;
+
+        return {
+            name: m.name || m.nome || "Sem nome",
+            link: m.link
+        };
     });
 
     return NextResponse.json({
-        queue: parsedQueue,
-        current: null,
+        queue: parsedQueue
     });
 }
