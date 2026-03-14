@@ -7,37 +7,21 @@ type Musica = {
     nome: string;
     link: string;
     youtubeId: string;
-    status: string;
 };
 
 export default function Fila() {
 
     const [fila, setFila] = useState<Musica[]>([]);
-    const [loading, setLoading] = useState(true);
 
     async function carregarFila() {
 
-        try {
+        const res = await fetch("/api/queue", {
+            cache: "no-store"
+        });
 
-            const resposta = await fetch(
-                "/api/queue?nocache=" + Date.now(),
-                { cache: "no-store" }
-            );
+        const data = await res.json();
 
-            const data = await resposta.json();
-
-            setFila(data.queue ?? []);
-
-        } catch (erro) {
-
-            console.error("Erro ao carregar fila:", erro);
-            setFila([]);
-
-        } finally {
-
-            setLoading(false);
-
-        }
+        setFila(data.queue);
 
     }
 
@@ -45,120 +29,79 @@ export default function Fila() {
 
         carregarFila();
 
-        const intervalo = setInterval(() => {
-            carregarFila();
-        }, 3000);
+        const interval = setInterval(carregarFila, 2000);
 
-        return () => clearInterval(intervalo);
+        return () => clearInterval(interval);
 
     }, []);
 
-    async function removerDaFila(id: number) {
+    async function remover(id: number) {
 
-        try {
+        await fetch("/api/remove", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ id })
+        });
 
-            await fetch("/api/remove", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ id })
-            });
-
-            carregarFila();
-
-        } catch (erro) {
-
-            console.error("Erro ao remover:", erro);
-
-        }
+        carregarFila();
 
     }
 
     return (
-
         <main style={{ padding: 40, maxWidth: 900, margin: "0 auto" }}>
 
             <h1>🎶 Fila do Karaoke</h1>
-            <p>Acompanhe a ordem das próximas músicas.</p>
 
-            {loading && <p>Carregando fila...</p>}
+            {fila.length === 0 && <p>Ninguém na fila ainda.</p>}
 
-            {!loading && fila.length === 0 && (
-                <p>Ninguém na fila ainda.</p>
-            )}
+            {fila.map((musica, index) => (
 
-            <div style={{ marginTop: 30 }}>
+                <div
+                    key={musica.id}
+                    style={{
+                        display: "flex",
+                        gap: 20,
+                        padding: 20,
+                        marginBottom: 20,
+                        border: "1px solid #ddd",
+                        borderRadius: 10
+                    }}
+                >
 
-                {fila.map((musica, index) => (
+                    <img
+                        src={`https://img.youtube.com/vi/${musica.youtubeId}/hqdefault.jpg`}
+                        width={160}
+                    />
 
-                    <div
-                        key={musica.id}
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 16,
-                            padding: 16,
-                            marginBottom: 16,
-                            border: "1px solid #ddd",
-                            borderRadius: 12
-                        }}
-                    >
+                    <div>
 
-                        <img
-                            src={`https://img.youtube.com/vi/${musica.youtubeId}/hqdefault.jpg`}
-                            alt={musica.nome}
-                            style={{ width: 160, borderRadius: 10 }}
-                        />
+                        <h2>
+                            {index + 1}. {musica.nome}
+                        </h2>
 
-                        <div style={{ flex: 1 }}>
+                        <a
+                            href={musica.link}
+                            target="_blank"
+                        >
+                            ▶ Abrir no YouTube
+                        </a>
 
-                            <h2 style={{ margin: 0 }}>
-                                {index + 1}. {musica.nome}
-                            </h2>
+                        <br />
 
-                            <a
-                                href={musica.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                    display: "inline-block",
-                                    marginTop: 10,
-                                    padding: "10px 14px",
-                                    backgroundColor: "#cc0000",
-                                    color: "#fff",
-                                    textDecoration: "none",
-                                    borderRadius: 8
-                                }}
-                            >
-                                ▶ Abrir no YouTube
-                            </a>
-
-                            <button
-                                onClick={() => removerDaFila(musica.id)}
-                                style={{
-                                    marginLeft: 10,
-                                    padding: "10px 14px",
-                                    backgroundColor: "#444",
-                                    color: "#fff",
-                                    border: "none",
-                                    borderRadius: 8,
-                                    cursor: "pointer"
-                                }}
-                            >
-                                ❌ Remover
-                            </button>
-
-                        </div>
+                        <button
+                            onClick={() => remover(musica.id)}
+                        >
+                            ❌ Remover
+                        </button>
 
                     </div>
 
-                ))}
+                </div>
 
-            </div>
+            ))}
 
         </main>
-
     );
-
 }
