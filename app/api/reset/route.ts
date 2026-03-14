@@ -1,28 +1,13 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 
-export const runtime = "nodejs";
-export const preferredRegion = "gru1";
-
-export const dynamic = "force-dynamic";
-
 export async function GET() {
-    try {
 
-        await kv.del("queue");
+    await kv.del("queue");
 
-        return NextResponse.json({
-            success: true,
-            message: "Fila apagada com sucesso."
-        });
+    return NextResponse.json({
+        ok: true,
+        message: "Fila apagada"
+    });
 
-    } catch (error) {
-
-        console.error("Erro ao resetar fila:", error);
-
-        return NextResponse.json(
-            { error: "Erro ao limpar fila." },
-            { status: 500 }
-        );
-    }
 }
