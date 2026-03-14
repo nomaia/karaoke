@@ -2,64 +2,55 @@ import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 
 export const runtime = "nodejs";
-export const preferredRegion = "gru1";
-
 export const dynamic = "force-dynamic";
 
 function getYoutubeId(url: string) {
     try {
-        const parsed = new URL(url);
+        const u = new URL(url);
 
-        if (parsed.hostname.includes("youtu.be")) {
-            return parsed.pathname.replace("/", "");
+        if (u.hostname.includes("youtu.be")) {
+            return u.pathname.replace("/", "");
         }
 
-        return parsed.searchParams.get("v");
+        return u.searchParams.get("v");
+
     } catch {
         return null;
     }
 }
 
-export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        const { nome, link } = body;
+export async function POST(req: Request) {
 
-        if (!nome || !link) {
-            return NextResponse.json(
-                { error: "Nome e link são obrigatórios" },
-                { status: 400 }
-            );
-        }
+    const body = await req.json();
+    const { nome, link } = body;
 
-        const youtubeId = getYoutubeId(link);
-
-        if (!youtubeId) {
-            return NextResponse.json(
-                { error: "Link do YouTube inválido" },
-                { status: 400 }
-            );
-        }
-
-        const novaMusica = {
-            id: Date.now(),
-            nome,
-            link,
-            youtubeId,
-            status: "waiting",
-        };
-
-        await kv.rpush("queue", novaMusica);
-        return NextResponse.json({
-            success: true,
-            musica: novaMusica,
-        });
-    } catch (error) {
-        console.error("Erro em /api/add:", error);
-
+    if (!nome || !link) {
         return NextResponse.json(
-            { error: "Erro ao adicionar música." },
-            { status: 500 }
+            { error: "Nome e link são obrigatórios" },
+            { status: 400 }
         );
     }
+
+    const youtubeId = getYoutubeId(link);
+
+    if (!youtubeId) {
+        return NextResponse.json(
+            { error: "Link inválido" },
+            { status: 400 }
+        );
+    }
+
+    const musica = {
+        id: Date.now(),
+        nome,
+        link,
+        youtubeId
+    };
+
+    await kv.rpush("queue", JSON.stringify(musica));
+
+    return NextResponse.json({
+        success: true
+    });
+
 }
