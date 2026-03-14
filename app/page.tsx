@@ -8,7 +8,7 @@ export default function Home() {
     const [link, setLink] = useState("");
     const [mensagem, setMensagem] = useState("");
 
-    async function adicionarMusica(e: any) {
+    async function adicionarMusica(e: React.FormEvent) {
         e.preventDefault();
 
         const resposta = await fetch("/api/add", {
@@ -16,7 +16,10 @@ export default function Home() {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ nome, link })
+            body: JSON.stringify({
+                name: nome,
+                link: link
+            })
         });
 
         const data = await resposta.json();
@@ -26,7 +29,7 @@ export default function Home() {
             setNome("");
             setLink("");
         } else {
-            setMensagem(data.error);
+            setMensagem(data.error || "Erro ao adicionar música.");
         }
     }
 
@@ -57,6 +60,7 @@ export default function Home() {
                 </div>
 
                 <button
+                    type="submit"
                     style={{
                         marginTop: 15,
                         padding: 12,
